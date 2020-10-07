@@ -1,0 +1,217 @@
+---
+title: "Shifts in the View of Climate Change from Previous Election to 2020"
+author: "Arshnoor Kaur Gill"
+date: "07/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gridExtra)
+library(here)
+```
+
+## Executive Summary
+
+This report has been commissioned by the Liberal Party of Canada, currently the Government of Canada and overseeing the Canadian response to unprecedented challenges caused by the COVID-19 epidemic. Due to pressures on the economy as well as time (regarding how much time to devote to issues of import during the election), the party is considering whether or not the Canadian electorate will judge their governance with climate action being a high-ranking concern. 500 responses were collected, the survey closing after we got the 500th observation, and the the averages of the last two questions, concerning the priority of climate change on a scale from 1 to 10, in 2019 and 2020 were then derived, as well as a new variable `change` to refer to the difference between these values
+
+Then there was a statistical study in which we found a relatively high 95% confidence interval of 1.960, meaning the actual decrease could be that much higher or lower than the result we got. This means that if we did this study repeatedly, we'd expect 95% of the surveys to yield a result somewhere in that range. Our data isn't as precise as we would hope given the range is big enough that it's possible the respondants could have increased their scale of priority, and that reflects the reality that the data is highly fluid and full of uncertainty considering the anonymity of the respondants that comes from the Internet.
+
+However, overall there is a 1.1 decrease in terms of 'priority' over all the respondants. This does suggest that if the government were to decrease the level to which climate change is a priority at this time, it might not necessarily put them at odds with the Canadian populace. Even the resource-heavy sectors which are typically resistant to Canadian climate change policy followed the general direction of the overall sample in the study.
+
+## Introduction
+
+The purpose of this survey is due to a contract with a Canadian political party—specifically, the Liberal Party of Canada. The objective is to get a larger idea of what the Canadian people feel with regard to a specific issue that the Liberals were quite persuasive on in the 2016 election: climate change. With the advent of COVID-19, it is natural that the government's focus would shift towards pulling the country out of a recession and keeping as many Canadians as employed as possible, and thus it is equally natural that some issues are being considered as falling to the wayside. Climate change, in terms of an issue that requires government funding to combat, may be one of these. This study specifically finds that there is an average 1.1 decrease on a priority scale from 1 to 10 regarding how they prioritize climate change.
+
+Specifically, I sent a survey titled, "Priority of Climate Change for Eligible Canadian Voters—Respond for a Chance to Win a $25 Dollar Tim Hortons Gift Card!" (linked in the appendix) to a variety of social media websites in order to collect responses. In order to get a greater idea of our population, the respondants were questioned for their province/territory of origin and the language that they speak at home. The survey asks how they viewed the climate crisis from 2019 to 2020, finding the average responses from both, as well as the average decrease in the priority scale. We found that there was a 1.1 decrease, but also that even before 2020 there didn't appear to be as much concern for climate change as one might've thought.
+
+I specifically focused on resource sectors, Alberta, Manitoba and Saskatchewan, considered politically conservative on climate action, and they seemed to fall in line with the rest of the country. There are specific biases regarding non-response, as there is no way to calculate who ignored the survey, and perhaps more information on the electorate could've been derived. That being said, care was taken to ensure the survey was brief to ensure a higher response rate.
+
+## Survey Methodology
+
+The population of this survey are the currently eligible voters of Canada. The sample would be 500 respondants that will find the poll through a variety of different social media websites, all with different age ranges, such that it reaches a broad segment of the population. These social media sites are: Facebook, Twitter, Tumblr and Instagram. Though for most of these sites the age tends to skew young, Facebook in particular hosts an older userbase and thus through using a variety of sites, paying the companies to boost the surveys on Canadian users' homepages, the survey reaches a broad segment of the population. The users are incentivized to answer with a gift card prize for one randomly selected respondant.
+
+The sampling technique that is used is random sampling without replacement. The properties this methodology brings are inherent in its' simplicity. The expectation of the results are in the mean of the responses for quantitive responses (both integer and continuous). Moreover, for the numeric responses, the variance can be calulated, and thus an estimate of the confidence interval for the standard error can be be derived.
+
+Non-response, of course, will be handled by the incentivization of the gift card prize for one respondant—this ensures that people are far more likely to complete the survey than ignore it outright, so the effects of non-response (namely, the fact that it will decrease the sample size and perhaps introduce a bias given one segment of the population may be more predisposed to completing surveys) will be as minimized as they can under the circumstances. After all, a free gift card to a Tim Hortons would probably incentivize all Canadians regardless of demographic to participate in this voluntary survey.
+
+Given this is over the Internet and not through landlines, and the respondant completes the survey themselves, the cost will be relatively less than randomly dialling different numbers. The platform used is "Google Forms", which is free, but paying for the survey to be advertised on different platforms will most likely lead to a total cost of a couple hundred dollars. The only risk to one's privacy is through the optional first question of the survey, which asks for an email that the survey can then contact if they win the gift card contest, and that will be protected by stripping that variable from the dataset before the analysis stage. That way, respondants will have their contact information secure, as no other question asks for specific information outside province and the primary language of Canada they speak.
+
+## Results
+```{r dataset, echo=FALSE}
+# Create a dataframe of results that we can then analyze. The first question will not be considered due to the fact that in the case of a proper dataset that classified information would immediately be stripped away.
+
+# The variable `location` will collect information on where a respondant is from in the country (answering the second question of the survey).
+
+# These two vectors list all the provinces and all the proportion of total populations in the same order.
+loc <- c("Ontario", "Quebec", "Nova Scotia", "New Brunswick", "Manitoba", "British Columbia", "Prince Edward Island", "Saskatchewan", "Alberta", "Newfoundland and Labrador", "Yukon", "Northwest Territories", "Nunavut")
+loc_prob <- c(0.388, 0.226, 0.026, 0.021, 0.036, 0.135, 0.004, 0.031, 0.116, 0.014, 0.001, 0.001, 0.001)
+
+# I create 500 samples of the second question and put it into the dataframe `data`.
+q1 <- sample(loc, 500, replace = TRUE, loc_prob)
+data <- data.frame(q1)
+
+# The variable `language` will collect information on the primary language of a respondant in the country (answering the third question).
+
+# This is a set of possible responses.
+lang <- c("English", "French", "Other")
+
+# This lists proportions of languages according to the 2016 Canadian Census per province. I have specialized the data a bit so that for certain provinces the proportions are more accurate.
+quebec_pro <- c(0.089, 0.790, 0.154)
+nun_pro <- c(0.329, 0.018, 0.674)
+gen_pro <- c(0.580, 0.214, 0.229)
+
+set.seed(4438)
+data <- data %>%
+  mutate(language = ifelse(q1 == "Quebec",
+                           sample(lang, 1, replace = TRUE, prob = quebec_pro),
+                           ifelse(q1 == "Nunavut",
+                                  sample(lang, 1, replace = TRUE, prob = nun_pro),
+                                  sample(lang, 1, replace = TRUE, prob = gen_pro))))
+
+# The variable `previous` will collect information on how Canadians felt about how high of a priority climate change was in the last election (answering the fourth question).
+
+responses <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+# I have specified the data a bit given what we know of the attitude towards climate change in certain provinces.
+orig_gen <- c(0.1, 0.1, 0.2, 0.4, 0.05, 0.05, 0.025, 0.025, 0.025, 0.025)
+
+#data <- data %>%
+#  mutate(previous = ifelse(q1 == "Alberta" | q1 == "Manitoba" | q1 == "Saskatchewan",
+#                           sample(responses, 1, replace = TRUE, prob = orig_west_prob),
+#                           sample(responses, 1, replace = TRUE, prob = orig_gen_prob)))
+
+set.seed(4438)
+previous = sample(responses, 500, replace = TRUE, orig_gen)
+
+# The variable `current` will collect information on how Canadians felt about how high a priority climate change is in a current/'immediate future' election.
+
+new_prob <- c(0.3, 0.4, 0.05, 0.05, 0.05, 0.05, 0.025, 0.025, 0.025, 0.025)
+
+set.seed(4438)
+current <- sample(responses, 500, replace = TRUE, new_prob)
+
+data <- data %>%
+  mutate (previous = previous, current = current, change = current - previous)
+
+```
+
+Below I've included a brief insight into the data, to show how the data collection has been organized. The first column concerns the location of the respondant, the second their language, and the two variables `previous` and `current` refer to how high of a priority, from one to ten, they consider climate change, `previous` being in the last election and `current` being in the current. Even if the respondant was not an adult and registered voter in the previous election, they surely must have some opinion, whether positive or negative or neutral, on this issue.
+
+The variable `change` will refer to the change in priority for all the 500 respondants.
+
+```{r insight, echo = FALSE}
+
+head(data)
+
+```
+
+Below I've included a summary table that shows the main statistical observations of the study.
+
+```{r, echo= FALSE}
+# This creates a summary table based off the data. `Error` captures the 95th confidence interval.
+data %>%
+  summarize(prev_mean = mean(previous), curr_mean = mean(current), change_avg = mean(change), error = qnorm(0.975) * sqrt(1 - (500/27243224) * (sd(change)^2)/500))
+```
+
+At first glance, before heading into a more general and complete analysis of his data, it appears that on average since the previous election, the electorate considers climate change less of a priority, given the average change in the priority scale from 1 to 10 has shifted negatively by 1.1.
+
+
+Below are the responses plotted, the previous election compared to current attiudes regarding the same issue of, "On a scale from one to ten, how high is a priority is climate change?"
+
+```{r, echo= FALSE}
+
+# This creates graphs of the variables `previous` and `current`.
+p1 <- data %>%
+  ggplot(aes(x = previous)) + geom_histogram(binwidth = 1) + ggtitle("Priority from 1-10 of \nClimate Change When Voting, 2019") + labs(x = "Rating")
+
+p2 <- data %>%
+  ggplot(aes(x = current)) + geom_histogram(binwidth = 1) + ggtitle("Priority from 1-10 of\nClimate Change When Voting, 2020") + labs(x = "Rating")
+
+grid.arrange(p1, p2, ncol = 2)
+
+```
+
+Though both seem to be right-skewed, suggesting that voters don't consider climate change an highly important priority when voting, there is a very clear visual manifestation of a shift further left in 2020, suggesting that the priority in the eyes of Canadians has lessened in some fashion. Below are the changes in priority graphed.
+
+```{r, echo= FALSE}
+# This creates a graph for the variable `change`.
+p3 <- data %>%
+  ggplot(aes(x = change)) + geom_histogram(binwidth = 1.5) + ggtitle("Change in Priority from 1-10 of Climate Change, 2019 to 2020") + labs(x = "Change in Priority")
+
+p3
+```
+
+There is an evident right skew to the data, matching the information derived from the summary statistic that in fact the overall change in people's opinion has been negative.
+
+## Discussion
+
+This study suggests a 1.1 average decrease in what how much they consider climate change a priority for the government to tackle. That being said, there is a high level of error comparatively for the data for a 95% data, the gathered data suggesting a ±1.960% level of error to the average change with a confidence interval of 95%. This could mean that the average change in opinion could theoretically not even be negative, and overall suggests that opinion regarding this issue is fluid and instable. This could be because of the inherent relatively that comes from the concept of "priority", which is less determined than one's height, for instance. Moreover, there is additional uncertainty considering there is no way with the survey to ensure the respondant is actually an adult without asking for an inappropriate amount of personal information from the respondant.
+
+In this section, I've also decided to break down the data by region to see if there are any unique patterns to be identified. Given that Alberta, Manitoba and Saskatchewan are more dependent on the resource sector than other parts of the country, particularly the oil sands, I wanted to see if they experienced a shift differenly than the rest of the country.
+
+```{r, echo= FALSE}
+
+# Below is specific analysis of the regions Alberta, Saskatchewan and Manitoba.
+p4 <- data %>%
+  filter(q1 == "Alberta" | q1 == "Saskatchewan" | q1 == "Manitoba") %>%
+  ggplot(aes(x = change)) + geom_histogram(binwidth = 1) + ggtitle("Change in Priority Specifically\nIn Alberta, Manitoba, and Sasketchewan") + labs(x = "Change in Priority, 1-10")
+
+p5 <- data %>%
+  filter(q1 == "Alberta" | q1 == "Saskatchewan" | q1 == "Manitoba") %>%
+  ggplot(aes(x = previous)) + geom_histogram(binwidth = 1) + ggtitle("Priority of Climate Change Specifically\nIn Alberta, Manitoba,\nand Sasketchewan, 2019") + labs(x = "Priority, 1-10")
+
+p6 <- data %>%
+  filter(q1 == "Alberta" | q1 == "Saskatchewan" | q1 == "Manitoba") %>%
+  ggplot(aes(x = current)) + geom_histogram(binwidth = 1) + ggtitle("Priority of Climate Change Specifically\nIn Alberta, Manitoba,\nand Sasketchewan, 2020") + labs(x = "Priority, 1-10")
+
+grid.arrange(p5, p6, p4, ncol = 2)
+
+```
+According to these graphs, these regions seem to be in line with general observations regarding the entire country. The great majority of respondants from these areas appear to prioritize climate change less in 2020 than they did in 2019.
+
+## Future Steps and Weaknesses
+
+As noted in the Discussions section, the rate of error is quite high. I believe this could be reduced through getting a bigger sample of the population, as clearly 500 respondants does not appear to catch the complete picture of what Canadians believe. Though the data appears to be relatively proportional to the Canadian population in terms of region, perhaps the data could be stratified in order to ensure proportional representation. 
+
+Moreover, this survey could've gone into perhaps the causes of why people's answers were affected by 2020. The political and economic situation is much different, particularly concerning COVID-19, and perhaps to get more accurate results this report could've questioned directly on if COVID-19 specifically affected how they viewed the urgency of the climate crisis as it pertains to levels of government funding.
+
+## Appendices
+
+The poll can be found at: https://forms.gle/KV4JbVsR2pr4ZqTJ8.
+
+```{r title and q1, fig.cap="The title and first question.", include = TRUE, echo = FALSE}
+knitr::include_graphics(here::here("Screen Shot 2020-10-07 at 2.31.09 PM.png"))
+```
+
+```{r q2, fig.cap="The second question.", include = TRUE, echo = FALSE}
+knitr::include_graphics(here::here("Screen Shot 2020-10-07 at 2.31.24 PM.png"))
+```
+
+```{r q3, fig.cap="The third question.", include = TRUE, echo = FALSE}
+knitr::include_graphics(here::here("Screen Shot 2020-10-07 at 2.31.09 PM.png"))
+```
+
+```{r q4 and q5, fig.cap="The fourth and fifth questions.", include = TRUE, echo = FALSE}
+knitr::include_graphics(here::here("screenshot1.png"))
+```
+
+
+Find supporting code at: https://github.com/arshnoor123/climate-change-analysis.
+
+## References
+
+- Baptiste Auguie (2017). gridExtra: Miscellaneous Functions for "Grid" Graphics. R
+  package version 2.3. https://CRAN.R-project.org/package=gridExtra
+- Kirill Müller (2017). here: A Simpler Way to Find Your Files. R package version 0.1.
+  https://CRAN.R-project.org/package=here
+- Statistics Canada. Population Estimates, Quarterly. Government of Canada. URL 
+  https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1710000901.
+- R Core Team (2019). R: A language and environment for statistical computing. R
+  Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+- Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software,
+  4(43), 1686, https://doi.org/10.21105/joss.01686
+- Yihui Xie and J.J. Allaire and Garrett Grolemund (2018). R Markdown: The Definitive
+  Guide. Chapman and Hall/CRC. ISBN 9781138359338. URL
+  https://bookdown.org/yihui/rmarkdown.
